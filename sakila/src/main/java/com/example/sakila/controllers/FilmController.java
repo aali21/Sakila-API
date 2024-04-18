@@ -19,6 +19,8 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -57,6 +59,8 @@ public class FilmController {
         List<Film> films = filmService.getAllFilms(pageNo,pageSize, sortBy);
 
 
+        // Convert the list of Film entities to a list of EntityModel<FilmOutput>.
+        // FilmOutput::from is a method reference that converts Film entities into FilmOutput DTOs.
         List<EntityModel<FilmOutput>> filmsOutput = films.stream()
                 .map(FilmOutput::from)
                 .map(EntityModel::of)
@@ -98,24 +102,40 @@ public class FilmController {
     @ResponseStatus(HttpStatus.CREATED)
     public FilmOutput create(@Validated(ValidationGroup.Create.class) @RequestBody FilmInput data) {
 
+
         Language language = languageRepository.findById(data.getLanguageID())
-                .orElseThrow(() -> new RuntimeException(String.format("No Language with id %d found.", data.getLanguageID())));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        String.format("No Language with id %d found.", data.getLanguageID())));
         final var film = new Film();
         film.setTitle(data.getTitle());
         film.setDescription(data.getDescription());
         film.setReleaseYear(data.getReleaseYear());
         film.setRentalDuration(data.getRentalDuration());
         film.setLanguage(language);
+        film.setRating(data.getRating());
+
         final var saved = filmRepository.save(film);
-        return FilmOutput.from(saved);
+//        return FilmOutput.from(saved);
+
+        // this will output what user created and also outputting a link to what they created
+        FilmOutput output = FilmOutput.from(saved);
+        output.add(linkTo(methodOn(FilmController.class).readById(saved.getId())).withSelfRel());
+
+        return ResponseEntity.created(linkTo(methodOn(FilmController.class)
+                .readById(saved.getId())).toUri()).body(output).getBody();
     }
+
+
 
     @PatchMapping("/{id}")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public FilmOutput updateFilm(@PathVariable Short id, @Validated(ValidationGroup.Update.class) @RequestBody FilmInput data) {
         // Retrieve the existing film from the database
         Film film = filmRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(String.format("No Film with id %d found.", id)));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        String.format("No Film with id %d found.", id)));
         // Check and update each field only if provided
         if (data.getTitle() != null) {
             film.setTitle(data.getTitle());
@@ -131,11 +151,12 @@ public class FilmController {
         }
         if (data.getLanguageID() != null) {
             Language language = languageRepository.findById(data.getLanguageID())
-                    .orElseThrow(() -> new RuntimeException(String.format("No Language with id %d found.", id)));
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            String.format("No Language with id %d found.", data.getLanguageID())));
             film.setLanguage(language);
         }
 
-        // Save the updated film
         Film updated = filmRepository.save(film);
         return FilmOutput.from(updated);
         }
@@ -145,7 +166,9 @@ public class FilmController {
     public FilmOutput putUpdateFilm(@PathVariable Short id, @Validated(ValidationGroup.Update.class) @RequestBody FilmInput data) {
         // Retrieve the existing film from the database
         Film film = filmRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(String.format("No Film with id %d found.", id)));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        String.format("No Film with id %d found.", id)));
 
         // Fully update the film with new data from the request
         film.setTitle(data.getTitle());
@@ -155,10 +178,12 @@ public class FilmController {
 
         // Fetch the language entity and update the language of the film
         Language language = languageRepository.findById(data.getLanguageID())
-                .orElseThrow(() -> new RuntimeException(String.format("No Language with id %d found.", id)));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        String.format("No Language with id %d found.", data.getLanguageID())));
         film.setLanguage(language);
 
-        // Save the updated film and return the updated data
+
         Film updated = filmRepository.save(film);
         return FilmOutput.from(updated);
     }

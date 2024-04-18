@@ -22,7 +22,7 @@ public class FilmOutput extends RepresentationModel<FilmOutput> {
     private Short releaseYear;
     private Language language;
     private Byte rentalDuration;
-//    private Rating rating;
+    private Rating rating;
     private List<ActorReferenceOutput> cast;
     private List<CategoryReferenceOutput> genres;
 
@@ -35,7 +35,7 @@ public class FilmOutput extends RepresentationModel<FilmOutput> {
                 film.getReleaseYear(),
                 film.getLanguage(), //getting the name (string) from getLanguage object
                 film.getRentalDuration(),
-//                film.getRating(),
+                film.getRating(),
                 film.getCast()
                         .stream()
                         .map(ActorReferenceOutput::from)

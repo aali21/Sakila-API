@@ -1,6 +1,7 @@
 package com.example.sakila.entities;
 
 import com.example.sakila.enums.Rating;
+import com.example.sakila.enums.RatingConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,8 +47,10 @@ public class Film {
     @Generated
     private BigDecimal rentalRate;
 
-//    @Column(name= "rating")
-//    private Rating rating;
+    @Column(name= "rating")
+//    @Enumerated(EnumType.STRING)
+    @Convert(converter = RatingConverter.class)
+    private Rating rating;
 
 //    @Column(name= "special_features")
 //    private String specialFeatures;
