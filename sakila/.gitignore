@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+/src/main/appengine/env_variables.yaml
+/src/main/appengine/app.yaml
